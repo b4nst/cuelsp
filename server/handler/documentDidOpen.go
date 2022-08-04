@@ -21,5 +21,8 @@ func (h *Handler) documentDidOpen(_ *glsp.Context, params *protocol.DidOpenTextD
 		return h.wrapError(err)
 	}
 
+	store.Store(params.TextDocument.URI, []byte(params.TextDocument.Text))
+	h.log.Debugf("stored: %s", params.TextDocument.URI)
+
 	return nil
 }

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
@@ -28,6 +29,13 @@ func (h *Handler) documentDidSave(context *glsp.Context, params *protocol.DidSav
 	if err := p.Reload(); err != nil {
 		return h.wrapError(err)
 	}
+
+	content, err := os.ReadFile(_uri.Filename())
+	if err != nil {
+		return h.wrapError(err)
+	}
+	store.Store(params.TextDocument.URI, content)
+	h.log.Debugf("stored: %s", params.TextDocument.URI)
 
 	return nil
 }

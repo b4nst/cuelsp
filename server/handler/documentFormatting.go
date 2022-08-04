@@ -2,31 +2,32 @@ package handler
 
 import (
 	"bytes"
-	"os"
+	"fmt"
+	"sync"
 
 	"cuelang.org/go/cue/format"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
-	"go.lsp.dev/uri"
 )
+
+var store sync.Map
 
 func (h *Handler) documentFormatting(_ *glsp.Context, params *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error) {
 	h.log.Debugf("Format: %s", params.TextDocument.URI)
 	h.log.Debugf("params: %#v", params)
 
-	_uri, err := uri.Parse(params.TextDocument.URI)
-	source, err := os.ReadFile(_uri.Filename())
-	if err != nil {
-		return nil, h.wrapError(err)
+	src, ok := store.Load(params.TextDocument.URI)
+	if !ok {
+		return nil, h.wrapError(fmt.Errorf("Could not load %s", params.TextDocument.URI))
 	}
+	source := src.([]byte)
 
-	h.log.Debugf("Find source of %s", _uri.Filename)
 	_fmt, err := format.Source(source, format.UseSpaces(2), format.TabIndent(false)) // TODO: gather from params.Options?
 	if err != nil {
 		return nil, h.wrapError(err)
 	}
 
-	h.log.Debugf("Source formatted: %s", _uri.Filename)
+	h.log.Debugf("Source formatted: %s", params.TextDocument.URI)
 	start := protocol.Position{Line: 0, Character: 0}
 
 	nl := []byte("\n")
